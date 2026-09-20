@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIDS NetSentinel — SOC Dashboard</title>
+<style>
+:root{
+  --bg:#070b12; --panel:#0d131d; --panel2:#101824; --panel3:#080d15;
+  --border:#1c2735; --border2:#263548; --text:#e5edf6; --muted:#8391a3;
+  --cyan:#22d3ee; --green:#34d399; --amber:#fbbf24; --red:#fb7185;
+  --purple:#a78bfa; --blue:#60a5fa; --shadow:0 12px 35px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{font-size:13px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.55}
+a{color:inherit}
+.app{min-height:100vh}
+.header{position:sticky;top:0;z-index:50;background:rgba(9,14,22,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.header-inner{max-width:1500px;margin:auto;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border:1px solid rgba(34,211,238,.3);border-radius:11px;display:grid;place-items:center;background:rgba(34,211,238,.08);color:var(--cyan);font-size:20px}
+.brand h1{margin:0;font-size:15px;letter-spacing:.02em}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.badge{font-size:9px;font-weight:800;padding:3px 7px;border-radius:5px;border:1px solid rgba(34,211,238,.25);background:rgba(34,211,238,.1);color:#8beafa;letter-spacing:.06em}
+.header-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.control{height:32px;padding:0 10px;border:1px solid var(--border2);border-radius:7px;background:#0a1018;color:var(--text);font-size:11px}
+.control select{background:transparent;border:0;color:#dce6f0;outline:0;width:100%;max-width:300px}
+.control select option{background:#0a1018;color:#dce6f0}
+.control:focus,.input:focus,.select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(34,211,238,.08)}
+.capture{display:flex;align-items:center;gap:6px;padding:0 9px}
+.btn{border:1px solid var(--border2);border-radius:7px;background:#111a27;color:#d8e3ee;padding:7px 11px;font-size:11px;font-weight:650;transition:.15s}
+.btn:hover{background:#172233;border-color:#34475e}
+.btn-primary{background:#087e96;border-color:#0a9db9;color:#fff}
+.btn-primary:hover{background:#0999b3}
+.btn-danger{background:#9d263d;border-color:#b7354d;color:#fff}
+.btn-success{background:#0b7958;border-color:#12a777;color:#fff}
+.btn-ghost{background:#0a1018}
+.server{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:#b9c4d0;font-size:10px;background:#0a1018}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot.green{background:var(--green);box-shadow:0 0 9px rgba(52,211,153,.65)}
+.dot.amber{background:var(--amber)}
+.dot.red{background:var(--red);box-shadow:0 0 8px rgba(251,113,133,.5)}
+main{max-width:1500px;margin:auto;padding:18px 20px 40px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow:auto;margin-bottom:18px}
+.tab{border:0;border-bottom:2px solid transparent;background:transparent;color:#8190a2;padding:10px 13px;font-size:11px;font-weight:650;white-space:nowrap}
+.tab:hover{color:#dce6f0}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+.card{background:linear-gradient(180deg,rgba(14,21,32,.95),rgba(11,17,26,.95));border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.card-pad{padding:15px}
+.metric{min-height:108px}.metric-top{display:flex;justify-content:space-between;color:var(--muted);font-size:10px}.metric-icon{font-size:14px;color:var(--cyan)}
+.metric-value{font-size:25px;font-weight:750;margin-top:9px;letter-spacing:-.03em}.metric-sub{font-size:10px;color:#657386;margin-top:5px}
+.risk{height:4px;background:#182333;border-radius:99px;overflow:hidden;margin-top:11px}.risk i{display:block;height:100%;width:15%;background:var(--green);transition:.25s}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:11px;margin-bottom:12px;border-bottom:1px solid var(--border)}
+.section-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12px}.section-title span{color:var(--cyan)}
+.section-meta{font-size:9px;color:#69778a;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.two{grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr)}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.chart-wrap{height:260px;position:relative}
+.chart-svg{width:100%;height:100%;display:block}
+.legend{display:flex;gap:16px;font-size:10px;color:#8794a5;margin-top:5px}.legend span{display:flex;align-items:center;gap:5px}.line-dot{width:8px;height:2px;background:var(--cyan)}.line-dot.red{background:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.mini{padding:11px;border:1px solid var(--border);background:#0a1018;border-radius:8px}.mini b{display:block;font-size:16px}.mini span{font-size:9px;color:var(--muted)}
+.threat-list{display:flex;flex-direction:column;gap:8px}.threat-row{display:grid;grid-template-columns:145px 1fr 42px;align-items:center;gap:8px;font-size:10px}.bar{height:6px;border-radius:99px;background:#192434;overflow:hidden}.bar i{display:block;height:100%;background:var(--cyan)}
+.filters{grid-template-columns:repeat(5,minmax(0,1fr));align-items:end}.field label{display:block;color:#7f8da0;font-size:9px;font-weight:650;margin-bottom:5px}.input,.select{width:100%;height:32px;background:#080e16;color:#dce6f0;border:1px solid var(--border2);border-radius:7px;padding:0 9px;font-size:10px}
+.input:disabled,.select:disabled{opacity:.5;cursor:not-allowed}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
+table{width:100%;border-collapse:collapse;min-width:760px}th{background:#080e16;color:#78879a;font-size:9px;text-align:left;font-weight:750;padding:9px;border-bottom:1px solid var(--border);white-space:nowrap}td{padding:9px;border-bottom:1px solid rgba(28,39,53,.7);font-size:10px;white-space:nowrap}tr:hover td{background:rgba(30,43,59,.35)}
+.class{font-weight:700}.threat{color:#fb9aad}.benign{color:#68e3b1}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.sev{display:inline-block;padding:3px 6px;border-radius:4px;border:1px solid;font-size:8px;font-weight:800}.sev.CRITICAL,.sev.HIGH{color:#ff9bad;background:rgba(159,35,57,.16);border-color:rgba(251,113,133,.35)}.sev.MEDIUM{color:#ffd67a;background:rgba(180,125,20,.14);border-color:rgba(251,191,36,.3)}.sev.LOW{color:#91c5ff;background:rgba(37,99,235,.12);border-color:rgba(96,165,250,.3)}
+.alert-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}.alert{border:1px solid var(--border);background:#080e16;border-radius:8px;padding:11px}.alert-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.alert-name{font-size:11px;font-weight:700}.alert-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:8px;color:#8996a8;font-family:ui-monospace,monospace;font-size:9px}.alert-grid b{color:#dbe5ef;font-weight:600}
+.log-tabs{display:flex;gap:4px;flex-wrap:wrap}.log-tab{background:#0b121b;color:#718096;border:1px solid var(--border);padding:5px 7px;border-radius:5px;font-size:9px}.log-tab.active{background:#293b56;color:#eaf3fb;border-color:#3e5878}
+.console{background:#030609;border:1px solid #111b27;border-radius:7px;min-height:180px;max-height:280px;overflow:auto;padding:11px;font:10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a8b4c2}.log-info{color:#a8b4c2}.log-warn{color:#f5cb70}.log-alert{color:#fb899d}.log-ok{color:#62ddb0}
+.actions{display:flex;gap:7px;flex-wrap:wrap}
+.empty{text-align:center;padding:38px 10px;color:#5e6c7d;font-size:10px}
+.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.detail{border:1px solid var(--border);background:#090f17;border-radius:7px;padding:9px}.detail label{display:block;color:#68778a;font-size:8px;margin-bottom:4px}.detail b{font-size:10px}
+.progress{height:8px;border-radius:99px;background:#192333;overflow:hidden}.progress i{display:block;height:100%;width:0;background:var(--cyan)}
+.model-card{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.model-name{font-size:11px;font-weight:700}.model-meta{font-size:9px;color:#728094;margin-top:3px}.status-pill{font-size:8px;padding:4px 6px;border-radius:5px;border:1px solid}
+.status-live{color:#6ee7b7;border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.08)}
+.status-idle{color:#aeb8c6;border-color:var(--border2);background:#0a1018}
+.status-warn{color:#ffd779;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08)}
+.retrain-grid{grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr)}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}.switch-row:last-child{border-bottom:0}.switch-title{font-size:10px;font-weight:700}.switch-desc{font-size:9px;color:#68778a;margin-top:3px}
+.switch{width:38px;height:20px;border:1px solid var(--border2);border-radius:99px;background:#162131;padding:2px;transition:.15s}.switch i{display:block;width:14px;height:14px;border-radius:50%;background:#738197;transition:.15s}.switch.on{background:rgba(34,211,238,.18);border-color:rgba(34,211,238,.45)}.switch.on i{transform:translateX(18px);background:var(--cyan)}
+.knowledge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.attack-info{border:1px solid var(--border);background:#090f17;border-radius:8px;padding:13px}.attack-info h4{margin:0 0 5px;font-size:11px}.attack-info p{margin:0;color:#7f8da0;font-size:9px;line-height:1.55}.tag{display:inline-block;margin-top:8px;margin-right:4px;padding:3px 5px;border-radius:4px;background:#111d2b;border:1px solid var(--border2);color:#9cb0c4;font-size:8px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.76);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal-backdrop.open{display:flex}.modal{width:min(980px,100%);max-height:90vh;overflow:auto;background:#0d141f;border:1px solid #304054;border-radius:12px;box-shadow:0 30px 90px rgba(0,0,0,.5)}.modal-head{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);background:#080e16}.modal-body{padding:15px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:150;max-width:380px;padding:10px 13px;border-radius:7px;border:1px solid var(--border2);background:#0c1420;box-shadow:var(--shadow);font-size:10px;display:none}.toast.show{display:block}.muted{color:var(--muted)}.text-green{color:var(--green)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}.text-amber{color:var(--amber)}.text-purple{color:var(--purple)}
+.pagination{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:11px}.pagination button{padding:4px 10px;border:1px solid var(--border2);border-radius:5px;background:#0a1018;color:var(--text)}.pagination button:disabled{opacity:.4;cursor:default}.pagination span{color:var(--muted)}
+@media(max-width:1150px){.metrics{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.two,.retrain-grid{grid-template-columns:1fr}}
+@media(max-width:760px){main{padding:12px}.header-inner{padding:10px 12px}.metrics,.three,.knowledge-grid{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr 1fr}.brand p{display:none}.header-controls{width:100%}.header-controls .server{margin-left:auto}}
+@media(max-width:520px){.metrics,.three,.knowledge-grid,.filters{grid-template-columns:1fr}.header-controls{align-items:stretch}.capture,.server{flex:1}.detail-grid{grid-template-columns:1fr}.tab{padding:9px 10px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">⌁</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:7px"><h1>NIDS NetSentinel</h1><span class="badge">SOC COMMAND CENTER</span></div>
+        <p>AI-powered Network Intrusion Detection & Security Operations Dashboard</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <div class="control capture">▣ <span style="color:#758397">Capture:</span>
+        <select id="interface-select" style="background:transparent;border:0;color:#dce6f0;outline:0;max-width:300px"><option>Loading interfaces...</option></select>
+      </div>
+      <button id="btn-pipeline-toggle" class="btn btn-success">▶ Start Capture</button>
+      <button id="btn-auto-refresh" class="btn btn-ghost">Auto: 3s</button>
+      <button id="btn-manual-refresh" class="btn btn-ghost" title="Refresh">↻</button>
+      <button id="btn-exit-app" class="btn btn-danger" title="Stop all processes and close the application">⏻ Exit</button>
+      <div class="server"><i id="status-dot" class="dot amber"></i> Server: <b id="status-text" class="text-amber">STANDBY</b></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<nav class="tabs" aria-label="SOC navigation">
+  <button class="tab active" data-view="overview">Overview</button>
+  <button class="tab" data-view="incidents">Incidents</button>
+  <button class="tab" data-view="flows">Network Flows</button>
+  <button class="tab" data-view="detection">Detection & Models</button>
+  <button class="tab" data-view="retraining">Model Retraining</button>
+  <button class="tab" data-view="knowledge">Attack Knowledge</button>
+  <button class="tab" data-view="system">System</button>
+</nav>
+
+<section id="view-overview" class="view active">
+  <div class="grid metrics">
+    <article class="card card-pad metric"><div class="metric-top"><span>Total Monitored Flows</span><span class="metric-icon">⌁</span></div><div id="metric-total-flows" class="metric-value">0</div><div class="metric-sub">Observed network sessions</div></article>
+    <article class="card card-pad metric"><div class="metric-top"><span>Malicious Threats</span><span class="metric-icon" style="color:var(--red)">△</span></div><div id="metric-attacks" class="metric-value text-red">0</div><div id="metric-threat-rate" class="metric-sub">0.0% threat rate</div></article>
+    <article class="card card-pad metric"><div class="metric-top"><span>Active Alerts</span><span class="metric-icon" style="color:var(--amber)">!</span></div><div id="metric-alerts" class="metric-value text-amber">0</div><div class="metric-sub">Events requiring triage</div></article>
+    <article class="card card-pad metric"><div class="metric-top"><span>Threat Posture</span><span class="metric-icon" style="color:var(--amber)">◈</span></div><div id="metric-threat-score" class="metric-value text-green">LOW</div><div class="risk"><i id="threat-score-bar"></i></div></article>
+    <article class="card card-pad metric"><div class="metric-top"><span>AI Inference</span><span class="metric-icon" style="color:var(--purple)">◆</span></div><div class="metric-value" style="font-size:16px">LightGBM GBDT</div><div class="metric-sub">38 CICIDS2018 features</div></article>
+  </div>
+
+  <!-- Telemetry Filters -->  
+   <article class="card card-pad" style="margin-top:14px">
+    <div class="section-head"><div class="section-title"><span>⌕</span> Telemetry Filters</div><button id="btn-reset-filters" class="btn btn-ghost">Reset</button></div>
+    <div class="grid filters">
+      <div class="field"><label>Network Interface</label><select id="filter-interface" class="select"><option value="all">All interfaces</option></select></div>
+      <div class="field"><label>Time Range</label><select id="filter-timerange" class="select"><option value="all">All records</option><option value="15m">Last 15 min</option><option value="1h">Last 1 hour</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></div>
+      <div class="field"><label>Source IP</label><input id="filter-src-ip" class="input" placeholder="Source IP"></div>
+      <div class="field"><label>Destination IP</label><input id="filter-dst-ip" class="input" placeholder="Destination IP"></div>
+      <div class="field"><label>Traffic Category</label><select id="filter-category" class="select"><option value="all">All traffic</option><option value="threats">Threats only</option><option value="benign">Benign only</option></select></div>
+    </div>
+  </article>
+
+  <div class="grid two" style="margin-top:14px">
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span>⌁</span> Live Network Telemetry & Attack Trend</div><span class="section-meta">rolling realtime view</span></div>
+      <div class="chart-wrap"><svg id="traffic-chart" class="chart-svg" viewBox="0 0 900 260" preserveAspectRatio="none"></svg></div>
+      <div class="legend"><span><i class="line-dot"></i>Total flows</span><span><i class="line-dot red"></i>Malicious flows</span></div>
+    </article>
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span style="color:var(--purple)">◉</span> Threat Breakdown</div><span id="threat-category-count" class="section-meta">0 categories</span></div>
+      <div id="threat-list" class="threat-list"><div class="empty">No classification data yet.</div></div>
+    </article>
+  </div>
+
+  <div class="grid two" style="margin-top:14px">
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span style="color:var(--red)">!</span> Priority Incident Feed</div><span id="alerts-count-badge" class="section-meta">0 active</span></div>
+      <div id="overview-alerts" class="alert-list"><div class="empty">No active security incidents.</div></div>
+    </article>
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span style="color:var(--amber)">◎</span> Top Threat Sources</div><span class="section-meta">ranked by observed alerts</span></div>
+      <div id="top-attackers" class="threat-list"><div class="empty">No attacker sources registered.</div></div>
+    </article>
+  </div>
+</section>
+
+<section id="view-incidents" class="view">
+  <div class="grid two">
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span style="color:var(--red)">!</span> Security Incident Queue</div><span id="incident-total" class="section-meta">0 events</span></div>
+      <div id="incident-list" class="alert-list"></div>
+    </article>
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span>⚡</span> Analyst Actions</div><span class="section-meta">frontend controls</span></div>
+      <p class="muted" style="font-size:10px;line-height:1.6">Actions are intentionally separated from detection. A SOC analyst should be able to inspect evidence before any containment action is sent to the backend.</p>
+
+      <!-- Report filters -->
+      <div style="margin:14px 0 12px;padding:10px;border:1px solid var(--border);border-radius:7px;background:#090f17">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end">
+          <div class="field" style="flex:1;min-width:100px"><label>Time Range</label><select id="report-time" class="select"><option value="all">All</option><option value="15m">15 min</option><option value="1h">1 hour</option><option value="24h">24 hours</option><option value="7d">7 days</option></select></div>
+          <div class="field" style="flex:1;min-width:100px"><label>Source IP</label><input id="report-src-ip" class="input" placeholder="Source IP"></div>
+          <div class="field" style="flex:1;min-width:100px"><label>Destination IP</label><input id="report-dst-ip" class="input" placeholder="Destination IP"></div>
+          <div class="field" style="flex:0.7;min-width:80px"><label>Interface</label><select id="report-interface" class="select" disabled><option value="all">All</option></select></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-danger" id="btn-block-all">Block All Current Attackers</button>
+        <button class="btn" id="btn-export">Export Incident Snapshot</button>
+      </div>
+      <div class="card" style="margin-top:14px"><div class="card-pad"><div class="section-title">Triage principle</div><p class="muted" style="font-size:9px;line-height:1.6;margin-bottom:0">Severity, source/destination, confidence, detection time and model evidence should be visible before escalation. Containment endpoints are not assumed unless the backend exposes them.</p></div></div>
+    </article>
+  </div>
+</section>
+
+<section id="view-flows" class="view">
+  <article class="card card-pad">
+    <div class="section-head"><div class="section-title"><span>☷</span> Real-Time Flow Telemetry</div><span id="flow-count-badge" class="section-meta">0 visible</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Classification</th><th>Source → Destination</th><th>Interface</th><th>Protocol</th><th>Rate</th><th>Throughput</th><th>Confidence</th><th>Inspector</th></tr></thead>
+        <tbody id="flows-tbody"><tr><td colspan="8" class="empty">Awaiting telemetry stream...</td></tr></tbody>
+      </table>
+    </div>
+    <!-- Pagination controls -->
+    <div class="pagination" id="flow-pagination">
+      <button id="flow-prev" disabled>◀ Previous</button>
+      <span id="flow-page-info">Page 1</span>
+      <button id="flow-next">Next ▶</button>
+    </div>
+  </article>
+</section>
+
+<section id="view-detection" class="view">
+  <div class="grid three">
+    <article class="card card-pad"><div class="section-head"><div class="section-title"><span>◆</span> Active Model</div><span class="status-pill status-live">READY</span></div><div class="model-card"><div><div class="model-name">LightGBM GBDT</div><div class="model-meta">38 CICIDS2018-derived features · multiclass inference</div></div><b class="text-green">ONLINE</b></div></article>
+    <article class="card card-pad"><div class="section-head"><div class="section-title"><span>▣</span> Feature Pipeline</div><span class="status-pill status-live">ACTIVE</span></div><div class="model-card"><div><div class="model-name">Flow feature extraction</div><div class="model-meta">Telemetry → feature vector → classifier</div></div><b id="feature-status" class="text-green">READY</b></div></article>
+    <article class="card card-pad"><div class="section-head"><div class="section-title"><span>⌁</span> Detection Engine</div><span class="status-pill status-live">RUNNING</span></div><div class="model-card"><div><div class="model-name">Hybrid detection pipeline</div><div class="model-meta">Network capture + ML classification + alerting</div></div><b id="detector-status" class="text-green">LIVE</b></div></article>
+  </div>
+  <div class="grid two" style="margin-top:14px">
+    <article class="card card-pad"><div class="section-head"><div class="section-title"><span>◆</span> Loaded Model Artifacts</div></div><div id="model-list"><div class="empty">Loading model files...</div></div></article>
+    <article class="card card-pad"><div class="section-head"><div class="section-title"><span>▤</span> Detection Pipeline Notes</div></div>
+      <div class="kpis"><div class="mini"><b>38</b><span>features expected by current UI contract</span></div><div class="mini"><b>3s</b><span>default dashboard refresh interval</span></div><div class="mini"><b>50</b><span>alert records requested per refresh</span></div><div class="mini"><b>60</b><span>flow records requested per refresh</span></div></div>
+      <p class="muted" style="font-size:9px;line-height:1.6;margin-bottom:0;margin-top:12px">The frontend treats model outputs as evidence. It does not calculate a new confidence score or alter classifications received from the backend.</p>
+    </article>
+  </div>
+
+  <!-- Model Version Management -->
+     <article class="card card-pad" style="margin-top:14px">
+    <div class="section-head">
+      <div class="section-title"><span style="color:var(--amber)">⟳</span> Model Version Management</div>
+      <span class="section-meta">backup &amp; rollback</span>
+    </div>
+    <p class="muted" style="font-size:9px;line-height:1.6;margin-bottom:10px">
+      All trained models are automatically backed up with a timestamp. You can switch the active model at any time.
+      <span id="model-switch-note" style="color:var(--amber);display:none"> (Pipeline must be stopped to switch)</span>
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button id="btn-refresh-models" class="btn btn-ghost">↻ Refresh List</button>
+    </div>
+    <div id="model-version-list" style="max-height:200px;overflow:auto">
+      <div class="empty">Loading model versions...</div>
+    </div>
+  </article>
+</section>
+
+<section id="view-retraining" class="view">
+  <div class="grid retrain-grid">
+    <article class="card card-pad">
+      <div class="section-head">
+        <div class="section-title"><span style="color:var(--purple)">↻</span> Model Retraining & Fine-Tuning</div>
+        <span id="retrain-status-pill" class="status-pill status-idle">IDLE</span>
+      </div>
+      <p class="muted" style="font-size:10px;line-height:1.65">
+        Fine-tune the LightGBM model with your own network traffic data. 
+        The system extracts high-confidence detections from the database and 
+        updates the model while preserving existing knowledge.
+      </p>
+
+      <!-- Training Data Stats -->
+      <div style="margin:12px 0;padding:10px;border:1px solid var(--border);border-radius:7px;background:#090f17">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div><span class="muted" style="font-size:9px">Available Training Samples</span><br><b id="train-data-count">—</b></div>
+          <div><span class="muted" style="font-size:9px">Latest Data</span><br><b id="train-data-latest">—</b></div>
+          <div><span class="muted" style="font-size:9px">Attack Classes</span><br><b id="train-data-classes">—</b></div>
+        </div>
+        <div id="train-data-dist" style="margin-top:6px;font-size:9px;color:var(--muted)"></div>
+      </div>
+
+      <!-- Retraining Controls -->
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">Model Name (Optional)</div>
+          <div class="switch-desc">Custom name for this trained version</div>
+        </div>
+        <input id="retrain-model-name" class="input" style="width:200px" placeholder="e.g., production-v2" maxlength="50">
+      </div>
+
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">Sample Limit</div>
+          <div class="switch-desc">Maximum flows to use for training</div>
+        </div>
+        <select id="retrain-sample-limit" class="control" style="width:120px">
+          <option value="1000">1,000</option>
+          <option value="5000">5,000</option>
+          <option value="10000" selected>10,000</option>
+          <option value="50000">50,000</option>
+          <option value="100000">100,000</option>
+        </select>
+      </div>
+
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">Confidence Threshold</div>
+          <div class="switch-desc">Minimum detection confidence to include as labeled data</div>
+        </div>
+        <select id="retrain-threshold" class="control" style="width:120px">
+          <option value="0.6">60%</option>
+          <option value="0.7">70%</option>
+          <option value="0.8" selected>80%</option>
+          <option value="0.9">90%</option>
+          <option value="0.95">95%</option>
+        </select>
+      </div>
+
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">Validation Split</div>
+          <div class="switch-desc">Portion of data held out for validation (training auto-adjusts to 100% - validation)</div>
+        </div>
+        <select id="retrain-test-size" class="control" style="width:120px">
+          <option value="0.1">10%</option>
+          <option value="0.2" selected>20%</option>
+          <option value="0.3">30%</option>
+        </select>
+      </div>
+
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">Force Retrain</div>
+          <div class="switch-desc">Restart retraining even if already running</div>
+        </div>
+        <button id="switch-force-retrain" class="switch" data-enabled="false"><i></i></button>
+      </div>
+
+      <div class="actions" style="margin-top:14px">
+        <button id="btn-retrain-start" class="btn btn-primary">▶ Start Retraining</button>
+        <button id="btn-retrain-stop" class="btn btn-danger">■ Stop Retraining</button>
+        <button id="btn-retrain-refresh" class="btn btn-ghost">↻ Refresh Status</button>
+        <button id="btn-retrain-stats" class="btn btn-ghost">📊 Data Stats</button>
+      </div>
+    </article>
+
+    <article class="card card-pad">
+      <div class="section-head">
+        <div class="section-title"><span>◷</span> Retraining Status</div>
+        <span class="section-meta">real-time feedback</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail"><label>STATE</label><b id="retrain-state">IDLE</b></div>
+        <div class="detail"><label>DATASET</label><b id="retrain-dataset">—</b></div>
+        <div class="detail"><label>SAMPLES</label><b id="retrain-samples">—</b></div>
+        <div class="detail"><label>MODEL</label><b id="retrain-model">—</b></div>
+      </div>
+      <div style="margin-top:13px">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#758397">
+          <span>Progress</span>
+          <span id="retrain-progress-label">0%</span>
+        </div>
+        <div class="progress" style="margin-top:5px">
+          <i id="retrain-progress" style="width:0%"></i>
+        </div>
+      </div>
+      <div id="retrain-message" class="muted" style="font-size:9px;line-height:1.6;margin-top:12px;min-height:40px">
+        No retraining job reported.
+      </div>
+      <div id="retrain-error" style="color:var(--red);font-size:9px;margin-top:6px;display:none"></div>
+    </article>
+  </div>
+
+  <!-- Model Promotion Checklist -->
+  <article class="card card-pad" style="margin-top:14px">
+    <div class="section-head">
+      <div class="section-title"><span>▤</span> Model Lifecycle</div>
+      <span class="section-meta">fine-tuning pipeline</span>
+    </div>
+    <div class="grid three">
+      <div class="mini">
+        <b>1. Collect</b>
+        <span>Extract high-confidence detections from database as labeled training data.</span>
+      </div>
+      <div class="mini">
+        <b>2. Fine-Tune</b>
+        <span>Update LightGBM model with new data while preserving existing knowledge (warm-start).</span>
+      </div>
+      <div class="mini">
+        <b>3. Validate & Promote</b>
+        <span>Evaluate on held-out data; if performance improves, save new model version.</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:7px;background:#090f17">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:9px">
+        <span><span class="muted">Current Model:</span> <b id="retrain-current-model">Loading...</b></span>
+        <span><span class="muted">Features:</span> <b id="retrain-feature-count">38</b></span>
+        <span><span class="muted">Classes:</span> <b id="retrain-class-count">9</b></span>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section id="view-knowledge" class="view">
+  <article class="card card-pad">
+    <div class="section-head"><div class="section-title"><span style="color:var(--amber)">▣</span> Attack Knowledge Base</div><span class="section-meta">information only · no simulator controls</span></div>
+    <p class="muted" style="font-size:10px;line-height:1.6">This tab contains the attack information that was previously exposed through the simulator in the reference dashboard. It is deliberately separated from operational controls so analysts can study detections without mixing knowledge content with active test actions.</p>
+    <div id="attack-knowledge" class="grid knowledge-grid"></div>
+  </article>
+</section>
+
+<section id="view-system" class="view">
+  <div class="grid two">
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span>▣</span> Running Processes</div><button id="btn-refresh-processes" class="btn btn-ghost">Refresh</button></div>
+      <div id="process-list"><div class="empty">Loading process table...</div></div>
+    </article>
+    <article class="card card-pad">
+      <div class="section-head"><div class="section-title"><span>◆</span> Model Files</div><span class="section-meta">backend artifacts</span></div>
+      <div id="system-model-list"><div class="empty">Loading...</div></div>
+    </article>
+  </div>
+  <article class="card card-pad" style="margin-top:14px">
+    <div class="section-head">
+      <div class="section-title"><span style="color:var(--green)">⌘</span> System & Sensor Logs</div>
+      <div class="log-tabs" id="log-file-tabs"></div>
+    </div>
+    <div class="actions" style="margin-bottom:8px"><span id="log-count" class="section-meta">0 lines</span><button id="btn-refresh-logs" class="btn btn-ghost">Refresh Logs</button></div>
+    <div id="console-body" class="console"><div class="empty">No logs available.</div></div>
+  </article>
+</section>
+</main>
+</div>
+
+<div id="flow-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head"><b id="modal-title">Flow Inspector</b><button id="modal-close" class="btn btn-ghost">✕</button></div>
+    <div id="modal-content" class="modal-body"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const API = {
+  stats: "/api/stats",
+  alerts: "/api/alerts",
+  flows: "/api/flows",
+  pipelineStatus: "/api/pipeline/status",
+  pipelineStart: "/api/pipeline/start",
+  pipelineStop: "/api/pipeline/stop",
+  pipelineLogs: "/api/system/logs/by-file?limit=60",
+  interfaces: "/api/interfaces",
+  processes: "/api/system/processes",
+  models: "/api/system/models",
+  allLogs: "/api/system/logs/by-file?limit=300",
+  retrainStatus: "/api/retraining/status",
+  retrainStart: "/api/retraining/start",
+  retrainStop: "/api/retraining/stop",
+  retrainModels: "/api/retraining/models",
+  retrainSwitch: "/api/retraining/switch",
+  shutdown: "/api/system/shutdown"
+};
+
+const state = {
+  flows: [], alerts: [], stats: null, interfaces: [], logs: {},
+  pipelineRunning: false, activeLogFile: "pipeline_manager.log",
+  autoRefresh: true, refreshTimer: null, refreshing: false,
+  chartHistory: [],
+  // filter state
+  filters: { time: "all", src_ip: "", dst_ip: "", interface: "all", category: "all" },
+  // pagination
+  flowsOffset: 0,
+  flowsLimit: 60,
+  flowsTotal: 0,
+  // report filters
+  reportFilters: { time: "all", src_ip: "", dst_ip: "", interface: "all" }
+};
+
+const ATTACK_OPTIONS = [
+  {id:"DDoS-HOIC", name:"DDoS HOIC Flood", category:"CRITICAL", desc:"High-volume SYN flood saturating ingress pipe (>50k pkts/s)", mitre:"T1498"},
+  {id:"DDoS-LOIC-HTTP", name:"DDoS LOIC (HTTP)", category:"CRITICAL", desc:"Layer-7 distributed HTTP GET requests stress testing web sockets", mitre:"T1498.001"},
+  {id:"DDoS-LOIC-UDP", name:"DDoS LOIC (UDP)", category:"CRITICAL", desc:"Unsolicited high-rate UDP datagram burst overload", mitre:"T1498"},
+  {id:"DoS GoldenEye", name:"DoS GoldenEye", category:"HIGH", desc:"Keep-Alive pool exhaustion and persistent TCP session starvation", mitre:"T1499"},
+  {id:"DoS Hulk", name:"DoS Hulk Flood", category:"HIGH", desc:"Obfuscated unique URL parameter flood bypassing cache layers", mitre:"T1499"},
+  {id:"DoS Slowloris", name:"DoS Slowloris", category:"MEDIUM", desc:"Low-bandwidth partial HTTP header stall holding server threads open", mitre:"T1499"},
+  {id:"SSH-BruteForce", name:"SSH BruteForce", category:"LOW", desc:"Port 22 rapid credential dictionary attempts", mitre:"T1110"},
+  {id:"Botnet Ares", name:"Botnet Ares C2", category:"HIGH", desc:"Periodic asynchronous beaconing and telemetry heartbeats", mitre:"T1071"},
+  {id:"Benign", name:"Benign Web Traffic", category:"BENIGN", desc:"Normal multi-packet HTTP/TLS session payload exchange", mitre:"N/A"}
+];
+
+const MITRE_MAP = {
+  "DDoS-HOIC":{id:"T1498",name:"Network Denial of Service"},
+  "DDoS-LOIC-HTTP":{id:"T1498.001",name:"Direct Network Flood"},
+  "DDoS-LOIC-UDP":{id:"T1498",name:"Network Denial of Service"},
+  "DoS GoldenEye":{id:"T1499",name:"Endpoint Denial of Service"},
+  "DoS Hulk":{id:"T1499",name:"Endpoint Denial of Service"},
+  "DoS Slowloris":{id:"T1499",name:"Endpoint Denial of Service"},
+  "SSH-BruteForce":{id:"T1110",name:"Brute Force"},
+  "Botnet Ares":{id:"T1071",name:"Application Layer Protocol C2"},
+  "Benign":{id:"N/A",name:"Normal Authorized Traffic"}
+};
+
+const LOG_FILES = ["pipeline_manager.log","flow_capture.log","buffer_writer.log","main_processor.log"];
+
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function toast(message){
+  const el=$("toast"); el.textContent=message; el.classList.add("show");
+  clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("show"),2600);
+}
+
+async function apiFetch(url, options={}){
+  const res=await fetch(url,{cache:"no-store",...options});
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const type=res.headers.get("content-type")||"";
+  return type.includes("application/json") ? res.json() : res.text();
+}
+
+function setServerStatus(ok){
+  const dot=$("status-dot"), text=$("status-text");
+  dot.className="dot "+(ok?(state.pipelineRunning?"green":"amber"):"red");
+  text.textContent=ok?(state.pipelineRunning?"ONLINE":"STANDBY"):"OFFLINE";
+  text.className=ok?(state.pipelineRunning?"text-green":"text-amber"):"text-red";
+}
+
+function updatePipelineUI(){
+  const b=$("btn-pipeline-toggle");
+  if(state.pipelineRunning){
+    b.className="btn btn-danger"; b.textContent="■ Stop Capture"; $("interface-select").disabled=true;
+  }else{
+    b.className="btn btn-success"; b.textContent="▶ Start Capture"; $("interface-select").disabled=false;
+  }
+  setServerStatus(true);
+  updateRetrainingButtons();
+}
+
+async function fetchInterfaces(){
+  try{
+    const data=await apiFetch(API.interfaces);
+    state.interfaces=Array.isArray(data.interfaces)?data.interfaces:[];
+    const top=$("interface-select"), filter=$("filter-interface"), report=$("report-interface");
+    top.innerHTML=""; filter.innerHTML='<option value="all">All interfaces</option>'; report.innerHTML='<option value="all">All</option>';
+    state.interfaces.forEach(iface=>{
+      if(!iface.device)return;
+      const label=iface.description||iface.friendly||iface.label||`Interface ${iface.index??""}`;
+      const o=document.createElement("option"); o.value=iface.device; o.textContent=label; top.appendChild(o);
+      const f=o.cloneNode(true); filter.appendChild(f);
+      const r=o.cloneNode(true); report.appendChild(r);
+    });
+    if(!top.options.length){top.innerHTML='<option value="">No capture interface available</option>';top.disabled=true}
+    else top.value=top.options[0].value;
+    updatePipelineUI();
+  }catch(e){
+    $("interface-select").innerHTML='<option value="">Failed to load interfaces</option>';
+    $("interface-select").disabled=true;
+  }
+}
+
+// Build query string from filter object
+function buildQuery(filters, extra={}){
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(k => {
+    if(filters[k] && filters[k] !== "all" && filters[k] !== "") params.append(k, filters[k]);
+  });
+  Object.keys(extra).forEach(k => {
+    if(extra[k] !== undefined && extra[k] !== null && extra[k] !== "") params.append(k, extra[k]);
+  });
+  const q = params.toString();
+  return q ? "?" + q : "";
+}
+
+// Update filter state from UI
+function readFilters(){
+  state.filters.time = $("filter-timerange").value;
+  state.filters.src_ip = $("filter-src-ip").value.trim();
+  state.filters.dst_ip = $("filter-dst-ip").value.trim();
+  state.filters.interface = $("filter-interface").value;
+  state.filters.category = $("filter-category").value;
+}
+
+function readReportFilters(){
+  state.reportFilters.time = $("report-time").value;
+  state.reportFilters.src_ip = $("report-src-ip").value.trim();
+  state.reportFilters.dst_ip = $("report-dst-ip").value.trim();
+  state.reportFilters.interface = $("report-interface").value; // always "all"
+}
+
+function updateMetrics(stats){
+  const total=Number(stats?.total_flows||0), attacks=Number(stats?.total_attacks||0), alerts=Number(stats?.security_alerts||0);
+  const rate=total?((attacks/total)*100).toFixed(1):"0.0";
+  $("metric-total-flows").textContent=total.toLocaleString();
+  $("metric-attacks").textContent=attacks.toLocaleString();
+  $("metric-alerts").textContent=alerts.toLocaleString();
+  $("metric-threat-rate").textContent=`${rate}% threat rate`;
+  const score=$("metric-threat-score"), bar=$("threat-score-bar");
+  if(attacks===0){score.textContent="LOW";score.className="metric-value text-green";bar.style.width="15%";bar.style.background="var(--green)"}
+  else if(Number(rate)<15){score.textContent="MEDIUM";score.className="metric-value text-amber";bar.style.width="50%";bar.style.background="var(--amber)"}
+  else{score.textContent="CRITICAL";score.className="metric-value text-red";bar.style.width="90%";bar.style.background="var(--red)"}
+}
+
+function updateChart(stats){
+  const total=Number(stats?.total_flows||0), attacks=Number(stats?.total_attacks||0);
+  state.chartHistory.push({total,attacks});
+  if(state.chartHistory.length>18) state.chartHistory.shift();
+  const svg=$("traffic-chart"), w=900,h=260,pad=28;
+  if(!state.chartHistory.length){svg.innerHTML="";return}
+  const max=Math.max(1,...state.chartHistory.map(x=>Math.max(x.total,x.attacks)));
+  const pts=(key)=>state.chartHistory.map((x,i)=>{
+    const xPos=pad+(i/(Math.max(1,state.chartHistory.length-1)))*(w-pad*1.5);
+    const y=h-pad-(x[key]/max)*(h-pad*2);
+    return [xPos,y];
+  });
+  const makePath=arr=>arr.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  const grid=[0,.25,.5,.75,1].map(v=>{const y=h-pad-v*(h-pad*2);return `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="#172231" stroke-width="1"/>`}).join("");
+  svg.innerHTML=`${grid}<path d="${makePath(pts("total"))}" fill="none" stroke="#22d3ee" stroke-width="2.2"/><path d="${makePath(pts("attacks"))}" fill="none" stroke="#fb7185" stroke-width="2.2"/>`;
+}
+
+function renderThreats(stats){
+  const dist=stats?.attack_distribution||{}, entries=Object.entries(dist).sort((a,b)=>b[1]-a[1]);
+  $("threat-category-count").textContent=`${entries.length} categories`;
+  if(!entries.length){$("threat-list").innerHTML='<div class="empty">No classification data yet.</div>';return}
+  const max=Math.max(1,...entries.map(x=>x[1]));
+  $("threat-list").innerHTML=entries.map(([name,count])=>`<div class="threat-row"><span>${esc(name)}</span><div class="bar"><i style="width:${(count/max*100).toFixed(1)}%"></i></div><b>${Number(count).toLocaleString()}</b></div>`).join("");
+}
+
+function severityClass(sev){return ["CRITICAL","HIGH","MEDIUM","LOW"].includes(String(sev).toUpperCase())?String(sev).toUpperCase():"LOW"}
+
+function renderAlerts(alerts,target="overview-alerts"){
+  const list=$(target), items=Array.isArray(alerts)?alerts:[];
+  if(target==="incident-list") $("incident-total").textContent=`${items.length} events`;
+  if(target==="overview-alerts") $("alerts-count-badge").textContent=`${items.length} active`;
+  if(!items.length){list.innerHTML='<div class="empty">No active security incidents.</div>';return}
+  list.innerHTML=items.slice(0,target==="overview-alerts"?6:50).map(a=>{
+    const sev=severityClass(a.severity||"HIGH"), mitre=MITRE_MAP[a.attack_type]||{id:"T1498",name:"Network Attack"};
+    const conf=Number(a.confidence||0)*100;
+    return `<div class="alert" data-flow-id="${esc(a.flow_id||"")}">
+      <div class="alert-top"><div style="display:flex;align-items:center;gap:7px"><span class="sev ${sev}">${sev}</span><span class="alert-name">${esc(a.attack_type||"Unknown threat")}</span><span class="tag" style="margin:0">${esc(mitre.id)}</span></div><span class="mono muted" style="font-size:9px">${esc(a.detected_at||"just now")}</span></div>
+      <div class="alert-grid"><span>Source <b>${esc(a.src_ip||"—")}</b></span><span>Target <b>${esc(a.dst_ip||"—")}</b></span><span>MITRE <b>${esc(mitre.name)}</b></span><span>Confidence <b>${conf?conf.toFixed(1)+"%":"—"}</b></span></div>
+    </div>`;
+  }).join("");
+  list.querySelectorAll(".alert").forEach(el=>el.addEventListener("click",()=>showFlow(el.dataset.flowId)));
+}
+
+function topAttackers(alerts){
+  const map={}; (alerts||[]).forEach(a=>{if(a.src_ip)map[a.src_ip]=(map[a.src_ip]||0)+1});
+  const rows=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8), max=rows[0]?.[1]||1;
+  $("top-attackers").innerHTML=rows.length?rows.map(([ip,n])=>`<div class="threat-row"><span class="mono">${esc(ip)}</span><div class="bar"><i style="width:${n/max*100}%"></i></div><b>${n}</b></div>`).join(""):'<div class="empty">No attacker sources registered.</div>';
+}
+
+function renderFlows(){
+  const flowData = state.flows || [];
+  if(!flowData.length){$("flows-tbody").innerHTML='<tr><td colspan="8" class="empty">No matching flows.</td></tr>'; return}
+  $("flows-tbody").innerHTML=flowData.map(f=>{
+    const threat=Boolean(f.is_malicious), conf=Number(f.confidence||0)*100, atype=f.attack_type||"Benign";
+    return `<tr data-flow-id="${esc(f.flow_id||"")}">
+      <td class="class ${threat?"threat":"benign"}">${threat?"△":"✓"} ${esc(atype)}</td>
+      <td class="mono">${esc(f.src_ip||"—")}:${esc(f.src_port??"—")} → ${esc(f.dst_ip||"—")}:${esc(f.dst_port??"—")}</td>
+      <td>${esc(f.interface||f.net_interface||"—")}</td><td>${esc(f.protocol||"—")}</td>
+      <td>${esc(f.flow_pkts_s!=null?Number(f.flow_pkts_s).toFixed(1):"—")}</td><td>${esc(f.flow_bytes_s!=null?Number(f.flow_bytes_s).toFixed(0):"—")}</td>
+      <td>${conf?conf.toFixed(1)+"%":"—"}</td><td><button class="btn btn-ghost inspect" style="padding:4px 7px">Inspect</button></td>
+    </tr>`;
+  }).join("");
+  $("flows-tbody").querySelectorAll("tr").forEach(row=>{
+    row.addEventListener("click",e=>{if(!e.target.classList.contains("inspect"))showFlow(row.dataset.flowId)});
+    row.querySelector(".inspect").addEventListener("click",()=>showFlow(row.dataset.flowId));
+  });
+  // update pagination info
+  const total = state.flowsTotal || 0;
+  const offset = state.flowsOffset || 0;
+  const limit = state.flowsLimit || 60;
+  const page = Math.floor(offset/limit) + 1;
+  const totalPages = Math.ceil(total/limit) || 1;
+  $("flow-page-info").textContent = `Page ${page} of ${totalPages} (${total} total)`;
+  $("flow-prev").disabled = (page <= 1);
+  $("flow-next").disabled = (page >= totalPages);
+  $("flow-count-badge").textContent = `${flowData.length} visible`;
+}
+
+function showFlow(flowId){
+  const flow=state.flows.find(f=>String(f.flow_id)===String(flowId)); if(!flow)return;
+  const probs=flow.probabilities||{}, features=flow.features||{};
+  $("modal-title").textContent=`Flow Inspector · ${flow.flow_id||"unknown"}`;
+  $("modal-content").innerHTML=`
+    <div class="detail-grid">
+      <div class="detail"><label>CLASSIFICATION</label><b class="${flow.is_malicious?"text-red":"text-green"}">${esc(flow.attack_type||"Benign")}</b></div>
+      <div class="detail"><label>SOURCE</label><b>${esc(flow.src_ip)}:${esc(flow.src_port)}</b></div>
+      <div class="detail"><label>DESTINATION</label><b>${esc(flow.dst_ip)}:${esc(flow.dst_port)}</b></div>
+      <div class="detail"><label>CONFIDENCE</label><b class="text-cyan">${flow.confidence?((flow.confidence*100).toFixed(2)+"%"):"—"}</b></div>
+    </div>
+    <div style="margin-top:14px"><div class="section-title">Model Probability Vector</div><div class="grid three" style="margin-top:8px">${Object.entries(probs).map(([k,v])=>`<div class="detail"><label>${esc(k)}</label><b>${(Number(v)*100).toFixed(1)}%</b><div class="bar" style="margin-top:6px"><i style="width:${Math.max(2,Number(v)*100)}%"></i></div></div>`).join("")||'<div class="muted" style="font-size:9px">No probability vector returned.</div>'}</div></div>
+    <div style="margin-top:14px"><div class="section-title">Extracted Feature Vector <span class="section-meta">${Object.keys(features).length||0} fields</span></div><div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Feature</th><th>Value</th></tr></thead><tbody>${Object.entries(features).map(([k,v])=>`<tr><td class="mono">${esc(k)}</td><td class="mono">${esc(v)}</td></tr>`).join("")||'<tr><td colspan="2" class="empty">No feature vector returned.</td></tr>'}</tbody></table></div></div>`;
+  $("flow-modal").classList.add("open");
+}
+
+function renderModels(models,target="model-list"){
+  const list=$(target), items=Array.isArray(models)?models:[];
+  list.innerHTML=items.length?items.map(m=>`<div class="model-card" style="padding:9px;border-bottom:1px solid var(--border)"><div><div class="model-name">${esc(typeof m==="string"?m:m.name||m.filename||"model")}</div><div class="model-meta">${esc(typeof m==="object"?(m.version||m.status||"artifact"):"backend model artifact")}</div></div><span class="status-pill status-live">LOADED</span></div>`).join(""):'<div class="empty">No model files found.</div>';
+}
+
+function renderLogs(){
+  const tabs=$("log-file-tabs");
+  tabs.innerHTML=LOG_FILES.map(name=>`<button class="log-tab ${state.activeLogFile===name?"active":""}" data-log="${name}">${name}</button>`).join("");
+  tabs.querySelectorAll(".log-tab").forEach(b=>b.addEventListener("click",()=>{state.activeLogFile=b.dataset.log;renderLogs()}));
+  const lines=state.logs?.[state.activeLogFile]||[];
+  $("log-count").textContent=`${lines.length} lines`;
+  $("console-body").innerHTML=lines.length?lines.map(line=>{
+    const s=String(line), cls=/ALERT|ERROR/i.test(s)?"log-alert":/WARN/i.test(s)?"log-warn":/INFO|SYS|ML|SOAR/i.test(s)?"log-info":"log-ok";
+    return `<div class="${cls}">${esc(s)}</div>`;
+  }).join(""):'<div class="empty">No logs recorded for this file.</div>';
+  $("console-body").scrollTop=$("console-body").scrollHeight;
+}
+
+async function fetchManagement(){
+  const [p,m,l]=await Promise.all([
+    apiFetch(API.processes).catch(()=>({processes:[]})),
+    apiFetch(API.models).catch(()=>({models:[]})),
+    apiFetch(API.allLogs).catch(()=>({logs:{}}))
+  ]);
+  const processes=p.processes||[];
+  $("process-list").innerHTML=processes.length?processes.map(x=>`<div class="model-card" style="padding:8px;border-bottom:1px solid var(--border)"><div><div class="model-name">${esc(x.name||"process")}</div><div class="model-meta">PID ${esc(x.pid??"—")}${x.alive===false?" · not running":""}</div></div></div>`).join(""):'<div class="empty">No relevant processes found.</div>';
+  renderModels(m.models||[],"system-model-list");
+  renderModels(m.models||[],"model-list");
+  if(l.logs && typeof l.logs==="object") state.logs=l.logs;
+  renderLogs();
+}
+
+// ============================================================
+// RETRAINING FUNCTIONS (manually triggered, no polling)
+// ============================================================
+
+async function fetchRetrainingStatus(){
+  try{
+    const data = await apiFetch(API.retrainStatus);
+    const running = data.is_running || data.status === "running" || data.status === "training";
+    const statusMap = {
+      "idle": "IDLE",
+      "preparing": "PREPARING",
+      "training": "TRAINING",
+      "evaluating": "EVALUATING",
+      "promoting": "PROMOTING",
+      "completed": "✅ COMPLETED",
+      "failed": "❌ FAILED",
+      "stopped": "⏹ STOPPED"
+    };
+    const statusText = statusMap[data.status] || data.status || "IDLE";
+    const isCompleted = data.status === "completed";
+    const isFailed = data.status === "failed";
+    
+    $("retrain-state").textContent = statusText;
+    $("retrain-state").style.color = isCompleted ? "var(--green)" : isFailed ? "var(--red)" : "";
+    $("retrain-status-pill").textContent = running ? "RUNNING" : (isCompleted ? "COMPLETED" : (isFailed ? "FAILED" : "IDLE"));
+    $("retrain-status-pill").className = "status-pill " + 
+      (running ? "status-live" : (isCompleted ? "status-live" : (isFailed ? "status-warn" : "status-idle")));
+    $("retrain-dataset").textContent = data.dataset || data.samples ? `${data.samples} flows` : "—";
+    $("retrain-samples").textContent = data.samples || "—";
+    $("retrain-model").textContent = data.model_version || "—";
+    const progress = Math.min(100, Math.max(0, data.progress || 0));
+    $("retrain-progress").style.width = progress + "%";
+    $("retrain-progress-label").textContent = progress.toFixed(0) + "%";
+    $("retrain-message").textContent = data.message || "No additional status message.";
+    
+    if(data.error){
+      $("retrain-error").textContent = "⚠️ " + data.error;
+      $("retrain-error").style.display = "block";
+    } else {
+      $("retrain-error").style.display = "none";
+    }
+    
+    // Update buttons based on pipeline state
+    updateRetrainingButtons();
+    
+    return data;
+  }catch(e){
+    $("retrain-state").textContent = "⚠️ UNAVAILABLE";
+    $("retrain-status-pill").textContent = "OFFLINE";
+    $("retrain-status-pill").className = "status-pill status-warn";
+    $("retrain-message").textContent = "Retraining endpoint unavailable.";
+    return null;
+  }
+}
+
+function updateRetrainingButtons(){
+  const pipelineRunning = state.pipelineRunning;
+  const isRetraining = $("retrain-state")?.textContent?.includes("TRAINING") || 
+                       $("retrain-state")?.textContent?.includes("PREPARING") ||
+                       $("retrain-state")?.textContent?.includes("EVALUATING") ||
+                       $("retrain-state")?.textContent?.includes("PROMOTING");
+  
+  // Disable all retraining controls if pipeline is running
+  const controls = ["btn-retrain-start", "btn-retrain-stop", "retrain-sample-limit", 
+                    "retrain-threshold", "retrain-test-size", "switch-force-retrain", "retrain-model-name"];
+  controls.forEach(id => {
+    const el = $(id);
+    if(el) {
+      el.disabled = pipelineRunning;
+      if(el.tagName === "BUTTON" && pipelineRunning) {
+        el.style.opacity = "0.5";
+      } else if(el.tagName === "BUTTON" && !pipelineRunning) {
+        el.style.opacity = "1";
+      }
+    }
+  });
+  
+  // Show/hide warning message
+  const msg = $("retrain-message");
+  if(pipelineRunning && msg) {
+    const warning = "⛔ Retraining is disabled while capture pipeline is running. Stop capture first.";
+    if(!msg.innerHTML.includes(warning)) {
+      msg.innerHTML = warning + "<br><span style='color:var(--muted)'>" + (msg.textContent || "") + "</span>";
+    }
+    msg.style.color = "var(--amber)";
+  } else if(msg) {
+    msg.style.color = "";
+    // Remove warning prefix if present
+    if(msg.innerHTML.includes("⛔")) {
+      const parts = msg.innerHTML.split("<br>");
+      msg.innerHTML = parts.length > 1 ? parts[1].replace(/<span[^>]*>|<\/span>/g, "") : "No retraining job reported.";
+      msg.style.color = "";
+    }
+  }
+  
+  // Update switch model note
+  const note = document.getElementById("model-switch-note");
+  if(note) {
+    note.style.display = pipelineRunning ? "inline" : "none";
+  }
+}
+
+async function fetchTrainingDataStats(){
+  try{
+    const data = await apiFetch(API.retrainDataStats || "/api/retraining/data-stats");
+    $("train-data-count").textContent = data.total_samples?.toLocaleString() || "0";
+    $("train-data-latest").textContent = data.latest_sample_at ? new Date(data.latest_sample_at * 1000).toLocaleString() : "—";
+    const classes = Object.keys(data.distribution || {}).length;
+    $("train-data-classes").textContent = classes || "—";
+    const distHtml = Object.entries(data.distribution || {})
+      .slice(0, 6)
+      .map(([k,v]) => `<span style="margin-right:8px">${k}: ${v}</span>`)
+      .join("");
+    $("train-data-dist").innerHTML = distHtml || "No labeled data available.";
+    return data;
+  }catch(e){
+    $("train-data-count").textContent = "⚠️";
+    return null;
+  }
+}
+
+async function startRetraining(){
+  if(state.pipelineRunning) {
+    toast("⚠️ Cannot start retraining while capture pipeline is running. Stop capture first.");
+    return;
+  }
+  const limit = parseInt($("retrain-sample-limit").value) || 10000;
+  const threshold = parseFloat($("retrain-threshold").value) || 0.8;
+  const testSize = parseFloat($("retrain-test-size").value) || 0.2;
+  const force = $("switch-force-retrain").dataset.enabled === "true";
+  const modelName = $("retrain-model-name").value.trim();
+  
+  $("btn-retrain-start").disabled = true;
+  $("btn-retrain-start").textContent = "⏳ Starting...";
+  
+  try{
+    const result = await apiFetch(API.retrainStart, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({sample_limit: limit, label_threshold: threshold, test_size: testSize, force: force, model_name: modelName})
+    });
+    if(result.status === "started" || result.status === "already_running"){
+      toast("✅ " + (result.message || "Retraining started"));
+    } else {
+      toast("⚠️ " + (result.message || "Unknown response"));
+    }
+    await fetchRetrainingStatus();
+  }catch(e){
+    toast("❌ Failed to start retraining: " + e.message);
+  } finally {
+    $("btn-retrain-start").textContent = "▶ Start Retraining";
+    $("btn-retrain-start").disabled = false;
+    updateRetrainingButtons();
+  }
+}
+
+async function stopRetraining(){
+  try{
+    const result = await apiFetch(API.retrainStop, {method: "POST"});
+    toast("⏹ " + (result.message || "Retraining stopped"));
+    await fetchRetrainingStatus();
+  }catch(e){
+    toast("❌ Failed to stop retraining: " + e.message);
+  }
+}
+
+// ============================================================
+// MODEL VERSION MANAGEMENT (Detection tab)
+// ============================================================
+
+async function fetchModelVersions() {
+  try {
+    const data = await apiFetch(API.retrainModels);
+    const list = data.models || [];
+    const container = document.getElementById("model-version-list");
+    if (!list.length) {
+      container.innerHTML = '<div class="empty">No backup models found.</div>';
+      return;
+    }
+    container.innerHTML = list.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px">
+        <div>
+          <b>${esc(m.version)}</b>
+          <span class="muted" style="margin-left:8px">${(m.size_bytes/1024).toFixed(1)} KB</span>
+          ${m.is_active ? '<span class="status-pill status-live" style="margin-left:8px">ACTIVE</span>' : ''}
+        </div>
+        <div>
+          <span class="muted">${new Date(m.modified_at*1000).toLocaleString()}</span>
+          ${!m.is_active ? `<button class="btn btn-ghost switch-model" data-version="${esc(m.version)}" style="padding:2px 8px;margin-left:8px" ${state.pipelineRunning ? 'disabled' : ''}>Activate</button>` : ''}
+        </div>
+      </div>
+    `).join("");
+    // Attach click events
+    container.querySelectorAll(".switch-model").forEach(btn => {
+      btn.addEventListener("click", async function() {
+        if (state.pipelineRunning) {
+          toast("⚠️ Cannot switch model while pipeline is running. Stop capture first.");
+          return;
+        }
+        const version = this.dataset.version;
+        try {
+          const result = await apiFetch(API.retrainSwitch, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({version: version})
+          });
+          if (result.status === "success") {
+            toast("✅ " + result.message);
+            fetchModelVersions();
+            // Also refresh model list in system tab and detection tab
+            fetchManagement();
+            // Reload model info in retraining tab
+            fetchRetrainingStatus();
+          } else {
+            toast("⚠️ " + (result.error || "Switch failed"));
+          }
+        } catch(e) {
+          toast("❌ Failed to switch model: " + e.message);
+        }
+      });
+    });
+    // Show/hide note about pipeline running
+    const note = document.getElementById("model-switch-note");
+    if(note) note.style.display = state.pipelineRunning ? "inline" : "none";
+  } catch(e) {
+    document.getElementById("model-version-list").innerHTML = '<div class="empty">⚠️ Could not load model versions.</div>';
+  }
+}
+
+// ============================================================
+// SETUP
+// ============================================================
+
+// Main data fetch with filters and pagination
+async function fetchAllData(keepOffset = false){
+  if(state.refreshing)return; state.refreshing=true;
+  try{
+    readFilters();
+    const filterQuery = buildQuery(state.filters);
+    const stats = await apiFetch(API.stats + filterQuery).catch(()=>null);
+    if(stats){state.stats=stats;updateMetrics(stats);updateChart(stats);renderThreats(stats)}
+
+    const alertQuery = buildQuery(state.filters, { limit: 50 });
+    const alerts = await apiFetch(API.alerts + alertQuery).catch(()=>({alerts:[]}));
+    state.alerts = alerts?.alerts||[];
+    renderAlerts(state.alerts,"overview-alerts");
+    renderAlerts(state.alerts,"incident-list");
+    topAttackers(state.alerts);
+
+    if(!keepOffset) state.flowsOffset = 0;
+    const flowQuery = buildQuery(state.filters, { limit: state.flowsLimit, offset: state.flowsOffset });
+    const flowResp = await apiFetch(API.flows + flowQuery).catch(()=>({flows:[], total:0}));
+    state.flows = flowResp?.flows||[];
+    state.flowsTotal = flowResp?.total||0;
+    renderFlows();
+
+    const status = await apiFetch(API.pipelineStatus).catch(()=>({is_running:false}));
+    state.pipelineRunning = Boolean(status?.is_running);
+    updatePipelineUI();
+
+    const logs = await apiFetch(API.pipelineLogs).catch(()=>({logs:{}}));
+    if(logs?.logs) state.logs = logs.logs;
+    renderLogs();
+
+    setServerStatus(true);
+  }catch(e){ setServerStatus(false); }
+  finally{ state.refreshing=false; }
+}
+
+async function togglePipeline(){
+  const iface=$("interface-select").value;
+  try{
+    if(state.pipelineRunning) await apiFetch(API.pipelineStop,{method:"POST"});
+    else{
+      if(!iface){toast("Select a capture interface first.");return}
+      await apiFetch(API.pipelineStart,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({interface:iface})});
+    }
+    await fetchAllData(true);
+    updateRetrainingButtons();
+    // Refresh model list in detection tab after pipeline state change
+    fetchModelVersions();
+  }catch(e){toast("Pipeline action failed: "+e.message)}
+}
+
+function setSwitch(id){
+  const b=$(id), on=b.dataset.enabled==="true"; b.dataset.enabled=String(!on); b.classList.toggle("on",!on);
+}
+
+function renderKnowledge(){
+  $("attack-knowledge").innerHTML=ATTACK_OPTIONS.map(a=>`<article class="attack-info"><h4>${esc(a.name)}</h4><p>${esc(a.desc)}</p><span class="tag">${esc(a.category)}</span><span class="tag">MITRE ${esc(a.mitre)}</span></article>`).join("");
+}
+
+async function exportSnapshot(){
+  readReportFilters();
+  const q = buildQuery(state.reportFilters, { limit: 1000 });
+  try{
+    const resp = await apiFetch(API.alerts + q);
+    const payload = {
+      generated_at: new Date().toISOString(),
+      filters: state.reportFilters,
+      total: resp?.alerts?.length || 0,
+      alerts: resp?.alerts || []
+    };
+    const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=`nids-incident-snapshot-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
+  }catch(e){ toast("Export failed: "+e.message); }
+}
+
+async function exitApp(){
+  if(!confirm("This stops live capture and shuts down the SOC server. The dashboard will go offline until you run the launcher again. Continue?"))return;
+  toast("Stopping pipeline and shutting down server...");
+  try{ await apiFetch(API.shutdown,{method:"POST"}); }catch(e){ /* server may exit */ }
+  clearInterval(state.refreshTimer);
+  state.pipelineRunning=false; updatePipelineUI(); setServerStatus(false);
+}
+
+function debounce(fn, delay=300){
+  let timer;
+  return function(...args){
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+function setup(){
+  // Tab switching
+  document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));tab.classList.add("active");
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));$("view-"+tab.dataset.view).classList.add("active");
+    if(tab.dataset.view==="system")fetchManagement();
+    if(tab.dataset.view==="retraining"){
+      fetchRetrainingStatus();
+      fetchTrainingDataStats();
+    }
+    if(tab.dataset.view==="detection"){
+      fetchModelVersions();
+    }
+  }));
+
+  $("btn-pipeline-toggle").addEventListener("click",togglePipeline);
+  $("btn-manual-refresh").addEventListener("click", ()=>fetchAllData(true));
+  $("btn-exit-app").addEventListener("click",exitApp);
+  $("btn-auto-refresh").addEventListener("click",()=>{
+    state.autoRefresh=!state.autoRefresh;
+    $("btn-auto-refresh").textContent=state.autoRefresh?"Auto: 3s":"Auto: OFF";
+    clearInterval(state.refreshTimer); if(state.autoRefresh)state.refreshTimer=setInterval(()=>fetchAllData(true),3000);
+  });
+
+  // Filter change events with debounce
+  const filterFields = ["filter-timerange","filter-src-ip","filter-dst-ip","filter-category","filter-interface"];
+  const debouncedFetch = debounce(() => fetchAllData(false), 300);
+  filterFields.forEach(id => {
+    const el = $(id);
+    if(el) el.addEventListener("input", debouncedFetch);
+    if(el) el.addEventListener("change", debouncedFetch);
+  });
+
+  // Reset filters
+  $("btn-reset-filters").addEventListener("click",()=>{
+    $("filter-timerange").value="all";
+    $("filter-src-ip").value="";
+    $("filter-dst-ip").value="";
+    $("filter-category").value="all";
+    $("filter-interface").value="all";
+    debouncedFetch();
+  });
+
+  // Pagination buttons
+  $("flow-prev").addEventListener("click",()=>{
+    if(state.flowsOffset >= state.flowsLimit){
+      state.flowsOffset -= state.flowsLimit;
+      fetchAllData(true);
+    }
+  });
+  $("flow-next").addEventListener("click",()=>{
+    if(state.flowsOffset + state.flowsLimit < state.flowsTotal){
+      state.flowsOffset += state.flowsLimit;
+      fetchAllData(true);
+    }
+  });
+
+  $("btn-refresh-logs").addEventListener("click",fetchAllData);
+  $("btn-refresh-processes").addEventListener("click",fetchManagement);
+  
+  // Retraining buttons (manual)
+  $("btn-retrain-start").addEventListener("click", startRetraining);
+  $("btn-retrain-stop").addEventListener("click", stopRetraining);
+  $("btn-retrain-refresh").addEventListener("click", () => {
+    fetchRetrainingStatus();
+    fetchTrainingDataStats();
+  });
+  $("btn-retrain-stats").addEventListener("click", fetchTrainingDataStats);
+  $("switch-force-retrain").addEventListener("click", function(){
+    const on = this.dataset.enabled === "true";
+    this.dataset.enabled = String(!on);
+    this.classList.toggle("on", !on);
+  });
+  
+  // Model version management (Detection tab)
+  $("btn-refresh-models").addEventListener("click", fetchModelVersions);
+  
+  // Other buttons
+  $("btn-export").addEventListener("click",exportSnapshot);
+  $("btn-block-all").addEventListener("click",()=>toast("No firewall/containment endpoint is assumed by this frontend."));
+
+  // Report filter changes (for export) - just update state
+  ["report-time","report-src-ip","report-dst-ip"].forEach(id => {
+    $(id).addEventListener("change", readReportFilters);
+    $(id).addEventListener("input", readReportFilters);
+  });
+
+  $("modal-close").addEventListener("click",()=>$("flow-modal").classList.remove("open"));
+  $("flow-modal").addEventListener("click",e=>{if(e.target.id==="flow-modal")$("flow-modal").classList.remove("open")});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")$("flow-modal").classList.remove("open")});
+
+  renderKnowledge();
+  fetchInterfaces();
+  fetchAllData(false);
+  fetchManagement();
+  // Initial fetch for model versions (detection tab will load on click)
+  fetchModelVersions();
+  // Initial retraining status (will be updated on tab click)
+  fetchRetrainingStatus();
+  state.refreshTimer = setInterval(()=>fetchAllData(true), 3000);
+}
+document.addEventListener("DOMContentLoaded",setup);
+</script>
+</body>
+</html>
