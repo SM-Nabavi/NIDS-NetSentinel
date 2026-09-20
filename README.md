@@ -111,7 +111,9 @@ Typical use cases: a lightweight SOC-style monitor for a small or mid-sized netw
 │   ├── bin/flow-capture.exe       Compiled binary (MinGW-W64 / gcc)
 │   ├── include/                   capture.h, flow_table.h, net_compat.h, time_compat.h, types.h
 │   ├── src/                       main.c, capture.c, flow_table.c
-│   └── build.bat                  gcc (MinGW-W64) build script
+│   └── build.bat                  Single entry point for building flow-capture.exe
+│                                  (MinGW-W64 gcc + Npcap SDK; creates bin\,
+│                                   skips rebuild if exe exists, use `force` to override)
 │
 └── notebooks/
     ├── data_processing.ipynb      CSE-CIC-IDS2018 cleaning and feature selection
@@ -171,8 +173,7 @@ Important: the order and computation of the 38 features must match training exac
 - Administrator privileges (required for raw packet capture)
 - Python 3.9 or later, added to PATH
 - Npcap installed on the host (runtime requirement)
-- For rebuilding the capture engine: MinGW-W64 (gcc toolchain, 64-bit) added to PATH, and the Npcap SDK
-
+- For rebuilding the capture engine: MinGW-W64 (gcc toolchain, 64-bit, with `x86_64-w64-mingw32-gcc` on PATH) and the Npcap SDK extracted to `C:\Npcap-SDK` (or edit `NPCAP_SDK` inside `flow-capture\build.bat`)
 ### Trained model files
 
 Before first run, the following files must exist under `detection-service/models/` (produced by the notebooks in `notebooks/`):
@@ -195,22 +196,20 @@ pip install -r requirements.txt
 
 3. Place the trained model files (see above) under `detection-service/models/`.
 
-4. (Optional) Rebuild the capture engine if `flow-capture/bin/flow-capture.exe` is not present, using MinGW-W64 gcc directly (no CMake required):
+4. (Optional) Rebuild the capture engine if `flow-capture/bin/flow-capture.exe` is not present. The build uses MinGW-W64 gcc through a single script:
 ```
 cd flow-capture
-gcc -O2 -Wall -Wextra -std=c11 ^
--Iinclude ^
--IC:/Npcap-SDK/Include ^
-src/main.c src/capture.c src/flow_table.c ^
--LC:/Npcap-SDK/Lib/x64 ^
--lwpcap -lPacket -lws2_32 -lIPHlpApi ^
--o bin/flow-capture.exe
+build.bat
 ```
 
-Notes:
-- Adjust `C:/Npcap-SDK` if your SDK is installed elsewhere.
-- Use `Lib/x64` for a 64-bit build or `Lib/x86` for a 32-bit build; make sure the MinGW-W64 target matches (use `x86_64-w64-mingw32-gcc` for 64-bit or `i686-w64-mingw32-gcc` for 32-bit).
-- If you prefer a reproducible build script instead of a raw gcc invocation, the same command can live in `flow-capture/build.bat` and be run as `build.bat`.
+The script handles everything automatically:
+- Verifies that `x86_64-w64-mingw32-gcc` is on PATH
+- Verifies that the Npcap SDK is present at `C:\Npcap-SDK`
+- Creates the `bin\` directory if it does not exist
+- Skips the build if `bin\flow-capture.exe` already exists (use `build.bat force` to rebuild anyway)
+- Prints a clear error message and exits with a non-zero code on failure
+
+If your Npcap SDK is not installed at `C:\Npcap-SDK`, edit the `NPCAP_SDK` variable at the top of `flow-capture\build.bat` before running it. For a 32-bit build, also change `CC` to `i686-w64-mingw32-gcc` and `LIBDIR` to `x86` in the same file.
 
 ## Running the System
 
