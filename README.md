@@ -78,7 +78,8 @@ Typical use cases: a lightweight SOC-style monitor for a small or mid-sized netw
 ```
 .
 ├── README.md
-├── requirements.txt
+├── requirements.in                Direct runtime dependencies (source of truth)
+├── requirements.txt               pip-compile-locked, fully pinned lockfile
 ├── run.bat                        Windows quick-start launcher
 │
 ├── data/                          Created at runtime
@@ -189,14 +190,29 @@ Without the model and scaler files, the detection service intentionally refuses 
 
 1. Install Npcap on the host machine (with "Install Npcap in WinPcap API-compatible mode" enabled). The SDK is only required if you plan to rebuild the capture engine.
 
-2. Install Python dependencies:
+2. Create and activate a virtual environment. This isolates NetSentinel's dependencies from the system Python and ensures every child process launched by the pipeline manager uses the same interpreter.
+
+   Command Prompt (cmd.exe):
+```
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
+
+3. Install Python dependencies:
 ```
 pip install -r requirements.txt
 ```
 
-3. Place the trained model files (see above) under `detection-service/models/`.
+`requirements.in` lists the five direct runtime dependencies (numpy, scikit-learn, joblib, lightgbm, scapy) with major-version bounds. `requirements.txt` is the pip-compile-generated lockfile that pins every transitive package with hashes for reproducible installs. To regenerate the lockfile after editing `requirements.in`:
+```
+pip install pip-tools
+pip-compile --output-file=requirements.txt requirements.in
+```
+Do not edit `requirements.txt` by hand — edit `requirements.in` and re-compile.
 
-4. (Optional) Rebuild the capture engine if `flow-capture/bin/flow-capture.exe` is not present. The build uses MinGW-W64 gcc through a single script:
+4. Place the trained model files (see above) under `detection-service/models/`.
+
+5. (Optional) Rebuild the capture engine if `flow-capture/bin/flow-capture.exe` is not present. The build uses MinGW-W64 gcc through a single script:
 ```
 cd flow-capture
 build.bat
