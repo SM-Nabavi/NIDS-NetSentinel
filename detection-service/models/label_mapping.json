@@ -1,0 +1,24 @@
+{
+    "label_to_id": {
+        "Benign": 0,
+        "Botnet Ares": 1,
+        "DDoS-HOIC": 2,
+        "DDoS-LOIC-HTTP": 3,
+        "DDoS-LOIC-UDP": 4,
+        "DoS GoldenEye": 5,
+        "DoS Hulk": 6,
+        "DoS Slowloris": 7,
+        "SSH-BruteForce": 8
+    },
+    "id_to_label": {
+        "0": "Benign",
+        "1": "Botnet Ares",
+        "2": "DDoS-HOIC",
+        "3": "DDoS-LOIC-HTTP",
+        "4": "DDoS-LOIC-UDP",
+        "5": "DoS GoldenEye",
+        "6": "DoS Hulk",
+        "7": "DoS Slowloris",
+        "8": "SSH-BruteForce"
+    }
+}
