@@ -117,8 +117,17 @@ Typical use cases: a lightweight SOC-style monitor for a small or mid-sized netw
 │                                   skips rebuild if exe exists, use `force` to override)
 │
 └── notebooks/
-    ├── data_processing.ipynb      CSE-CIC-IDS2018 cleaning and feature selection
-    └── model_training.ipynb       LightGBM training and evaluation
+    ├── data_processing.ipynb      Colab-ready CSE-CIC-IDS2018 cleaning and feature selection
+    ├── model_training.ipynb       Colab-ready LightGBM training and evaluation
+    └── outputs/
+        ├── classification_report.txt
+        ├── confusion_matrix.png
+        ├── feature_importance.png
+        ├── pca.png
+        ├── tsne.png
+        ├── umap.png
+        ├── selected_features.json
+        └── stage1_cleaning_stats.json
 ```
 
 ## Dataset and Model
@@ -155,6 +164,51 @@ Training (`notebooks/model_training.ipynb`):
 
 Note: high accuracy on this benchmark does not guarantee identical performance on a given organization's live traffic, since traffic distributions differ (domain shift). This is the reason the `retraining.py` module exists — to periodically adapt the model to real traffic collected by this same deployment.
 
+### Model Results
+
+The trained LightGBM model was evaluated on the held-out test split using the same preprocessing and feature set used during training.
+
+* **Model:** LightGBM Multiclass
+* **Number of classes:** 9
+* **Selected features:** 38
+* **Train / Validation / Test split:** 70% / 15% / 15%
+* **Random state:** 42
+* **Macro F1-score:** ~99.998%
+* **Weighted F1-score:** ~99.9997%
+
+These results represent performance on the prepared CSE-CIC-IDS2018 benchmark dataset and should not be interpreted as a direct measure of performance on unseen real-world network traffic.
+
+### Evaluation
+
+The model evaluation includes the following generated outputs:
+
+* Classification report with per-class precision, recall, and F1-score
+* Confusion matrix
+* Feature importance analysis
+* PCA visualization
+* t-SNE visualization
+* UMAP visualization
+
+These outputs are generated from the training and evaluation notebooks and are intended to provide additional insight into model performance and feature behavior.
+
+### Feature Selection
+
+The preprocessing pipeline reduces the original feature set from **81 features to 38 selected features**.
+
+Feature selection combines:
+
+* Variance thresholding
+* Correlation-based feature pruning
+* Random Forest feature importance
+* Mutual information
+* ANOVA F-test
+
+The selected feature set is saved as part of the notebook outputs and is used consistently by the trained model.
+
+### Training environment:
+- Training was performed using Google Colab's free tier; the notebooks under `notebooks/` are organized for that environment and include dependency installation, dataset access from Google Drive or Colab storage, and export of the trained artifacts back to Google Drive.
+- The notebooks are Colab-oriented; running them in a local Jupyter environment may require path and dependency adjustments.
+
 Trained artifacts are expected at:
 ```
 detection-service/models/
@@ -186,6 +240,8 @@ Before first run, the following files must exist under `detection-service/models
 
 Without the model and scaler files, the detection service intentionally refuses to start rather than run with an invalid or placeholder model.
 
+The training notebooks are intended for Google Colab's free tier and are not part of the runtime pipeline. They only produce the model artifacts that must be placed under `detection-service/models/`.
+
 ## Installation
 
 1. Install Npcap on the host machine (with "Install Npcap in WinPcap API-compatible mode" enabled). The SDK is only required if you plan to rebuild the capture engine.
@@ -210,7 +266,7 @@ pip-compile --output-file=requirements.txt requirements.in
 ```
 Do not edit `requirements.txt` by hand — edit `requirements.in` and re-compile.
 
-4. Place the trained model files (see above) under `detection-service/models/`.
+4. Place the trained model files (see above) under `detection-service/models/`. These files can be produced by running the Colab notebooks in `notebooks/`.
 
 5. (Optional) Rebuild the capture engine if `flow-capture/bin/flow-capture.exe` is not present. The build uses MinGW-W64 gcc through a single script:
 ```

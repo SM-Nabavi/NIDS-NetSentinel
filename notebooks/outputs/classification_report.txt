@@ -1,0 +1,18 @@
+                precision    recall  f1-score   support
+
+        Benign     1.0000    1.0000    1.0000   2048469
+   Botnet Ares     1.0000    1.0000    1.0000     21360
+     DDoS-HOIC     1.0000    1.0000    1.0000     81185
+DDoS-LOIC-HTTP     1.0000    1.0000    1.0000     43286
+ DDoS-LOIC-UDP     1.0000    1.0000    1.0000       383
+ DoS GoldenEye     0.9997    1.0000    0.9999      3406
+      DoS Hulk     1.0000    1.0000    1.0000     81096
+ DoS Slowloris     1.0000    1.0000    1.0000      1306
+SSH-BruteForce     1.0000    1.0000    1.0000     14192
+
+      accuracy                         1.0000   2294683
+     macro avg     1.0000    1.0000    1.0000   2294683
+  weighted avg     1.0000    1.0000    1.0000   2294683
+
+Macro F1: 1.0000
+Weighted F1: 1.0000

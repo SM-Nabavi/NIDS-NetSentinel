@@ -1,0 +1,82 @@
+[
+  {
+    "file": "Botnet-Friday-02-03-2018.parquet",
+    "status": "success",
+    "original_rows": 5094963,
+    "final_rows": 5094963,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Botnet-Friday-02-03-2018_cleaned.parquet"
+  },
+  {
+    "file": "Bruteforce-Wednesday-14-02-2018.parquet",
+    "status": "success",
+    "original_rows": 4251654,
+    "final_rows": 4251654,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Bruteforce-Wednesday-14-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "DDoS1-Tuesday-20-02-2018.parquet",
+    "status": "success",
+    "original_rows": 4645423,
+    "final_rows": 4645423,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/DDoS1-Tuesday-20-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "DDoS2-Wednesday-21-02-2018.parquet",
+    "status": "success",
+    "original_rows": 5557255,
+    "final_rows": 5557255,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/DDoS2-Wednesday-21-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "DoS2-Friday-16-02-2018.parquet",
+    "status": "success",
+    "original_rows": 3972747,
+    "final_rows": 3972747,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/DoS2-Friday-16-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "Dos1-Thursday-15-02-2018.parquet",
+    "status": "success",
+    "original_rows": 5956382,
+    "final_rows": 5956382,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Dos1-Thursday-15-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "Infil1-Wednesday-28-02-2018.parquet",
+    "status": "success",
+    "original_rows": 5122734,
+    "final_rows": 5122734,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Infil1-Wednesday-28-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "Infil2-Thursday-01-03-2018.parquet",
+    "status": "success",
+    "original_rows": 5173171,
+    "final_rows": 5173171,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Infil2-Thursday-01-03-2018_cleaned.parquet"
+  },
+  {
+    "file": "Web1-Thursday-22-02-2018.parquet",
+    "status": "success",
+    "original_rows": 4651955,
+    "final_rows": 4651955,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Web1-Thursday-22-02-2018_cleaned.parquet"
+  },
+  {
+    "file": "Web2-Friday-23-02-2018.parquet",
+    "status": "success",
+    "original_rows": 4565131,
+    "final_rows": 4565131,
+    "final_cols": 82,
+    "cleaned_path": "/content/drive/My Drive/NIDS_Project/temp_preprocessed/Web2-Friday-23-02-2018_cleaned.parquet"
+  }
+]
