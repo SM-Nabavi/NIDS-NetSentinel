@@ -363,3 +363,8 @@ Other ideas under consideration: anomaly detection for attack types outside the 
 ## Author
 
 Seyed Mahdi Nabavi Mousavi — Team 213, AI Keyboard Competition 1404 (Mashhad, Khorasan Razavi)
+
+## License
+
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for details.
